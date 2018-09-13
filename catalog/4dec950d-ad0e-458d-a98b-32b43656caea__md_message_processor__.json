@@ -1,0 +1,22 @@
+{
+    "inputMessageMetadata": {
+        "messagePayload": {
+            "connectorName": "#_custom_mule_metadata_type_#",
+            "typeId": "caseTrigger"
+        }
+    },
+    "outputMessageMetadata": {
+        "messagePayload": {
+            "connectorName": "#_custom_mule_metadata_type_#",
+            "typeId": "stringType"
+        },
+        "flowVariables": {
+            "Originator": {
+                "connectorName": "#_custom_mule_metadata_type_#",
+                "typeId": "stringType"
+            }
+        }
+    },
+    "id": "4dec950d-ad0e-458d-a98b-32b43656caea",
+    "version": "5.2.0.0"
+}

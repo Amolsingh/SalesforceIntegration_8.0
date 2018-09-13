@@ -1,0 +1,11 @@
+{
+	"Id": "5004100000K36p9AAB",
+	"Origin": "Phone",
+	"Description": "The issue could not be resolved with the guidelines. Please provide necessary support",
+	"Reason": "Feedback",
+	"SLAViolation__c": "No",
+	"subject": "case creation",
+	"originator__c": "originator",
+	"Incoming_Channel__c": "Incoming Channel",
+	"Status": "Working"
+}

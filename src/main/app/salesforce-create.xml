@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:context="http://www.springframework.org/schema/context" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+    
+    <flow name="create-case">
+        <dw:transform-message doc:name="createCaseRequest" metadata:id="e45adabd-8854-4cfd-8b62-be96a618ad9e">
+            <dw:input-payload mimeType="application/json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+[{
+	ContactId:flowVars.contactId when flowVars.contactId !=null otherwise payload.ContactId,
+	AccountId:flowVars.accountId when flowVars.accountId !=null otherwise payload.AccountId,
+	Reason: payload.Reason,
+	Origin: payload.Origin,
+	Description: payload.Description,
+	SLAViolation__c: payload.SLAViolation__c,
+	Subject: payload.subject,
+	originator__c: payload.originator__c,
+	Incoming_Channel__c: payload.Incoming_Channel__c,
+	Status: payload.Status	
+}]]]></dw:set-payload>
+        </dw:transform-message>
+        <sfdc:create config-ref="Salesforce__Basic_Authentication" type="Case" doc:name="Salesforce">
+            <sfdc:objects ref="#[payload]"/>
+        </sfdc:create>
+        <dw:transform-message doc:name="createCaseResponse">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+"id":payload.id]]></dw:set-payload>
+            <dw:set-session-variable variableName="CaseID"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.id[0]]]></dw:set-session-variable>
+        </dw:transform-message>
+    </flow>
+    <flow name="create-account">
+		 
+        <dw:transform-message metadata:id="7c1e7d45-b859-4a38-b489-c5ecee0fc0e5" doc:name="createAccountRequest">
+            
+            <dw:input-payload mimeType="application/json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+[{
+	
+	name: payload.accountName,
+	BillingCity: payload.billingcity,
+	BillingCountry: payload.country,
+	ShippingCity: payload.shippingcity,
+	shippingCountry: payload.country,
+	Phone: payload.phone
+}]]]></dw:set-payload>
+        </dw:transform-message>
+        <sfdc:create config-ref="Salesforce__Basic_Authentication" type="Account" doc:name="Salesforce">
+            <sfdc:objects ref="#[payload]"/>
+        </sfdc:create>
+        <dw:transform-message doc:name="createAccountResponse">
+        
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+"id":payload.id[0]]]></dw:set-payload>
+           <dw:set-variable variableName="accountId"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.id[0]]]></dw:set-variable>
+            <dw:set-variable variableName="acntStusFlg"><![CDATA[%dw 1.0
+%output application/java
+---
+'Created']]></dw:set-variable>
+        </dw:transform-message>
+    </flow>
+    <flow name="create-contact">
+
+        <dw:transform-message metadata:id="0dc98586-299f-4ea6-abe3-b3c601d4e526" doc:name="createContactRequest">
+            <dw:input-payload mimeType="application/json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+[{
+	AccountId: flowVars.accountId when flowVars.accountId != null otherwise payload.AccountId,
+	LastName: payload.lastName,
+	FirstName: payload.firstName,
+	OtherCity: payload.city,
+	OtherCountry: payload.country,
+	Phone: payload.phone,
+	Email: payload.email
+}]]]></dw:set-payload>
+        </dw:transform-message>
+        <sfdc:create config-ref="Salesforce__Basic_Authentication" type="Contact" doc:name="Salesforce">
+            <sfdc:objects ref="#[payload]"/>
+        </sfdc:create>
+        <dw:transform-message doc:name="createContactResponse">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+"id":payload.id[0]]]></dw:set-payload>
+            <dw:set-variable variableName="contactId"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.id[0]]]></dw:set-variable>
+            <dw:set-variable variableName="contStusFlg"><![CDATA[%dw 1.0
+%output application/java
+---
+"Created"]]></dw:set-variable>
+        </dw:transform-message>
+    </flow>
+    <flow name="create-note">
+
+        <object-to-string-transformer doc:name="Object to String"/>
+        <dw:transform-message metadata:id="cd4e230a-32be-4686-825f-1ac61a7fd88f" doc:name="createNoteRequest">
+            <dw:input-payload mimeType="application/json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+[{
+	
+	CommentBody: flowVars.Comment,
+	ParentId: flowVars.CaseId
+}]
+]]></dw:set-payload>
+        </dw:transform-message>
+        <sfdc:create config-ref="Salesforce__Basic_Authentication" type="CaseComment" doc:name="Salesforce"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	"status": payload.success,
+	"id": payload.id
+}]]></dw:set-payload>
+        </dw:transform-message>
+
+    </flow>
+    <flow name="create-partOrder">
+        <!-- <http:listener config-ref="HTTP_Listener_Configuration" path="${partOrder.path}" doc:name="HTTP"/> -->
+        <dw:transform-message doc:name="createPartOrderRequest" metadata:id="2cc45b18-2475-442a-af5a-2fe8507151e5">
+            <dw:input-payload mimeType="application/json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+[{
+	AccountId: payload.AccountId,
+	Status: payload.Status,
+	OrderNumber: payload.OrderNumber
+	
+}]]]></dw:set-payload>
+        </dw:transform-message>
+        <sfdc:create config-ref="Salesforce__Basic_Authentication" type="OrderDetails__x" doc:name="Salesforce">
+            <sfdc:objects ref="#[payload]"/>
+        </sfdc:create>
+
+        <dw:transform-message doc:name="createPartOrderResponse">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+}]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+    
+</mule>

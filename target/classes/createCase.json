@@ -1,0 +1,19 @@
+{
+	"Origin": "Phone",
+	"Description": "The issue could not be resolved with the guidelines. Please provide necessary support",
+	"Reason": "Feedback",
+	"SLAViolation__c": "No",
+	"accountName": "amit gautam",
+	"billingcity":"Mumbai",
+	"shippingCity":"Mumbai",
+	"firstName": "amit",
+	"lastName": "gautam",
+	"city":"Mumbai",
+	"country":"India",
+	"phone":"7878787878",
+	"email":"abc12345@gmail.com",
+	"subject": "case creation",
+	"originator__c": "originator",
+	"Incoming_Channel__c": "Incoming Channel",
+	"Status": "Working"
+}

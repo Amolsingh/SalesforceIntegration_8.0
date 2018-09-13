@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+    <!-- <http:listener-config name="SalesforceIntegration-httpListenerConfig" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/> -->
+    <flow name="SalesforceIntegration-main">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/api/*" doc:name="HTTPsalesforceIntegration" />
+        <apikit:router config-ref="SalesforceIntegration-config" doc:name="APIkit Router" />
+        <exception-strategy ref="SalesforceIntegration-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy" />
+    </flow>
+    <flow name="SalesforceIntegration-console">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/console/*" doc:name="HTTPconsole" />
+        <apikit:console config-ref="SalesforceIntegration-config" doc:name="APIkit Console" />
+    </flow>
+    <flow name="post:/account:application/json:SalesforceIntegration-config">
+        <set-variable variableName="test" value="${salesforce.authorization.url}" doc:name="Variable" />
+        <flow-ref name="create-account-inbound" doc:name="create-account-inbound" />
+    </flow>
+    <flow name="put:/account/{id}:application/json:SalesforceIntegration-config">
+        <logger level="DEBUG" doc:name="Logger" message="#[message.payloadAs(java.lang.String)]" />
+        <byte-array-to-object-transformer doc:name="Byte Array to Object" />
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-variable variableName="accountId"><![CDATA[%dw 1.0
+%output application/java
+---
+inboundProperties.'http.uri.params'[0]
+]]></dw:set-variable>
+        </dw:transform-message>
+        <flow-ref name="account-update" doc:name="account-update" />
+    </flow>
+    <!-- <flow name="put:/account/id:application/json:SalesforceIntegration-config">
+        <logger level="DEBUG" doc:name="Logger" message="#[message.payloadAs(java.lang.String)]" />
+        <byte-array-to-object-transformer doc:name="Byte Array to Object" />
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-variable variableName="accountId"><![CDATA[%dw 1.0
+%output application/java
+
+payload.accountId]]></dw:set-variable>
+        </dw:transform-message>
+        <flow-ref name="account-update" doc:name="account-update" />
+    </flow> -->
+    <flow name="get:/account:SalesforceIntegration-config">
+        <set-payload value="#[message.inboundProperties.'http.query.params'.id]" doc:name="Set Payload" />
+        <sfdc:query config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT Id,BillingCity,BillingCountry,Name,Phone FROM Account where Id = '#[payload]'" doc:name="Salesforce" />
+        <json:object-to-json-transformer doc:name="Object to JSON" />
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+"accounts":payload]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+    <flow name="post:/contact:application/json:SalesforceIntegration-config">
+        <flow-ref name="create-contact-inbound" doc:name="create-contact-inbound" />
+    </flow>
+    <!-- <flow name="put:/contact/id:application/json:SalesforceIntegration-config">
+        <logger level="INFO" doc:name="Logger" />
+        <byte-array-to-object-transformer doc:name="Byte Array to Object" />
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-variable variableName="contactId"><![CDATA[%dw 1.0
+%output application/java
+
+payload.contactId]]></dw:set-variable>
+        </dw:transform-message>
+        <flow-ref name="contact-update" doc:name="contact-update" />
+    </flow> -->
+     <flow name="put:/contact/{id}:application/json:SalesforceIntegration-config">
+        <logger level="INFO" doc:name="Logger" />
+        <byte-array-to-object-transformer doc:name="Byte Array to Object" />
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-variable variableName="contactId"><![CDATA[%dw 1.0
+%output application/java
+---
+inboundProperties.'http.uri.params'[0]
+
+]]></dw:set-variable>
+        </dw:transform-message>
+        <flow-ref name="contact-update" doc:name="contact-update" />
+    </flow>
+    <flow name="get:/contact:SalesforceIntegration-config">
+        <set-payload value="#[message.inboundProperties.'http.query.params'.id]" doc:name="Set Payload" />
+        <sfdc:query config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT Id,AccountId,Email,FirstName,LastName,OtherCity,OtherCountry,Phone FROM Contact where Id = '#[payload]'" doc:name="Salesforce" />
+        <json:object-to-json-transformer doc:name="Object to JSON" />
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+"contacts":payload]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+    <flow name="post:/case:application/json:SalesforceIntegration-config">
+        <flow-ref name="create-case-inbound" doc:name="create-case-inbound" />
+    </flow>
+    
+    <flow name="put:/case/{id}:application/json:SalesforceIntegration-config">
+        <logger level="DEBUG" doc:name="Logger" message="#[message.payloadAs(java.lang.String)]" />
+        <byte-array-to-object-transformer doc:name="Byte Array to Object" />
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+            <dw:set-variable variableName="caseId"><![CDATA[%dw 1.0
+%output application/java
+---
+inboundProperties.'http.uri.params'[0]]]></dw:set-variable>
+        </dw:transform-message>
+        <flow-ref name="case-update" doc:name="case-update" />
+    </flow>
+        <!-- <logger level="DEBUG" doc:name="Logger" message="#[message.payloadAs(java.lang.String)]" />
+        <byte-array-to-object-transformer doc:name="Byte Array to Object" />
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+
+payload]]></dw:set-payload>
+        </dw:transform-message>
+        <flow-ref name="case-update" doc:name="case-update" /> -->
+    
+    <flow name="get:/case:SalesforceIntegration-config">
+        <set-payload value="#[message.inboundProperties.'http.query.params'.id]" doc:name="Set Payload" />
+        <sfdc:query config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT AccountId,CaseNumber,ContactId,Description,Id,Origin,Reason,SLAViolation__c,Subject FROM Case where Id = '#[payload]'" doc:name="Salesforce" />
+        <json:object-to-json-transformer doc:name="Object to JSON" />
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+"cases":payload]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+    <flow name="post:/caseNote:application/json:SalesforceIntegration-config">
+        <flow-ref name="note-process-inbound" doc:name="note-process-inbound" />
+    </flow>
+    <flow name="get:/caseNote:SalesforceIntegration-config">
+        <set-payload value="GET method not implemented for the service exposed" doc:name="Set Payload" />
+    </flow>
+    <flow name="post:/notification:application/json:SalesforceIntegration-config">
+        <flow-ref name="salesforce-send-notification" doc:name="salesforce-send-notification" />
+    </flow>
+    <flow name="get:/notification:SalesforceIntegration-config">
+        <set-payload value="GET method not implemented for the service exposed" doc:name="Set Payload" />
+    </flow>
+    <flow name="post:/partOrder:application/json:SalesforceIntegration-config">
+        <flow-ref name="partOrder-process-SAPToSalesforce" doc:name="partOrder-process-SAPToSalesforce" />
+    </flow>
+    <flow name="get:/partOrder:SalesforceIntegration-config">
+        <set-payload value="GET method not implemented for the service exposed" doc:name="Set Payload" />
+    </flow>
+    
+    <apikit:mapping-exception-strategy name="SalesforceIntegration-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+</mule>

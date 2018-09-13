@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <flow name="account-update">
+        <logger message="#[message.payloadAs(java.lang.String)]" level="INFO" doc:name="accountUpdateRequest"/>
+        <dw:transform-message doc:name="updateAccountRequest">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+[{
+	Id: flowVars.accountId,
+	BillingCity: payload.billingcity,
+	BillingCountry: payload.country,
+	ShippingCity: payload.shippingcity,
+	shippingCountry: payload.country,
+	Phone: payload.phone
+}]]]></dw:set-payload>
+        </dw:transform-message>
+        <sfdc:update config-ref="Salesforce__Basic_Authentication" type="Account" doc:name="Salesforce"/>
+        <dw:transform-message doc:name="updateAccountResponse">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+status: "The account has been updated with the details provided"
+]]></dw:set-payload>
+            <dw:set-variable variableName="acntStusFlg"><![CDATA[%dw 1.0
+%output application/java
+---
+"Updated"]]></dw:set-variable>
+        </dw:transform-message>
+    </flow>
+    <flow name="contact-update">
+        <logger message="#[message.payloadAs(java.lang.String)]" level="INFO" doc:name="contactUpdateRequest"/>
+        <dw:transform-message doc:name="updateContactRequest">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+[{
+	Id: flowVars.contactId,
+	AccountId: flowVars.accountId when flowVars.accountId != null otherwise payload.AccountId,
+	LastName: payload.lastName,
+	FirstName: payload.firstName,
+	OtherCity: payload.city,
+	OtherCountry: payload.country,
+	Phone: payload.phone,
+	Email: payload.email
+}]]]></dw:set-payload>
+        </dw:transform-message>
+        <sfdc:update config-ref="Salesforce__Basic_Authentication" type="Contact" doc:name="Salesforce">
+            <sfdc:objects ref="#[payload]"/>
+        </sfdc:update>
+        <dw:transform-message doc:name="updateContactResponse">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+status: "The contact has been updated with the details provided"]]></dw:set-payload>
+            <dw:set-variable variableName="contStusFlg"><![CDATA[%dw 1.0
+%output application/java
+---
+"Updated"]]></dw:set-variable>
+        </dw:transform-message>
+    </flow>
+    <flow name="case-update">
+        <logger message="#[message.payloadAs(java.lang.String)]" level="INFO" doc:name="caseUpdateRequest"/>
+        <dw:transform-message doc:name="updateCaseRequest">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+[{
+	Id: flowVars.caseId,
+	Reason: payload.Reason,
+	Origin: payload.Origin,
+	Description: payload.Description,
+	SLAViolation__c: payload.SLAViolation__c,
+	Subject: payload.subject,
+	originator__c: payload.originator__c,
+	Incoming_Channel__c: payload.Incoming_Channel__c,
+	Status: payload.Status	
+}]]]></dw:set-payload>
+        </dw:transform-message>
+        <sfdc:update config-ref="Salesforce__Basic_Authentication" type="Case" doc:name="Salesforce">
+            <sfdc:objects ref="#[payload]"/>
+        </sfdc:update>
+        <dw:transform-message doc:name="updateCaseResponse">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+status: "The case has been updated with the details provided"]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+
+
+<flow name="send-notification-main">
+        <logger message="Incoming Payooad : #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="printingPayload" category="PART ORDER RESPONSE::"/>
+        <set-variable variableName="incomingPayload" value="#[payload]" doc:name="incomingPayload"/>
+        <dw:transform-message metadata:id="4dec950d-ad0e-458d-a98b-32b43656caea" doc:name="Transform Message">
+            <dw:input-payload mimeType="application/json"/>
+            <dw:set-variable variableName="Originator"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.Originator__c[0]]]></dw:set-variable>
+        </dw:transform-message>
+        <async doc:name="Async">
+            <flow-ref name="send-notification-partner" doc:name="send-notification-partner"/>
+        </async>
+
+    </flow>
+    <flow name="send-notification-partner">
+        <enricher source="#[payload]" target="#[flowVars.endPoint]" doc:name="Message Enricher">
+            <processor-chain doc:name="Processor Chain">
+                <sfdc:query config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT Host_Name__c FROM Notifications__c WHERE Originator__c ='#[flowVars.Originator]'" doc:name="Salesforce"/>
+                <dw:transform-message doc:name="Transform Message">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload.Host_Name__c[0]]]></dw:set-payload>
+                </dw:transform-message>
+            </processor-chain>
+        </enricher>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.endPoint!=null]">
+                <http:request config-ref="HTTP_Request_Configuration" path="#[flowVars.endPoint]" method="POST" doc:name="HTTP">
+                    <http:request-builder>
+                        <http:header headerName="Content-Type" value="application/json"/>
+                    </http:request-builder>
+                </http:request>
+                <logger message="sent to Originator" level="INFO" doc:name="Logger"/>
+            </when>
+            <otherwise>
+                <logger message="Originator not found in Salesfore" level="INFO" doc:name="Logger"/>
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="update-partOrder">
+        <flow-ref name="query-partOrder" doc:name="query-partOrder"/>
+        <!-- <flow-ref name="query-accountName" doc:name="query-accountName"/> -->
+        <dw:transform-message doc:name="updatePartOrderRequest">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+[{
+	Id: flowVars.Id,
+	Description: flowVars.Description,
+	PO_Status__c: flowVars.POStatus
+}]]]></dw:set-payload>
+        </dw:transform-message>
+        <sfdc:update config-ref="Salesforce__Basic_Authentication" type="Order" doc:name="Salesforce">
+            <sfdc:objects ref="#[payload]"/>
+        </sfdc:update>
+        <dw:transform-message metadata:id="5f7ea9c5-6138-4262-b2e9-a311b29d4463" doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+"result" : payload.success[0]
+
+}]]></dw:set-payload>
+        </dw:transform-message>
+
+    </flow>
+
+</mule>

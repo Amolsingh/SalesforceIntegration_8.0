@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd">
+    <flow name="create-case-inbound">
+        <!-- <http:listener config-ref="HTTP_Listener_Configuration" path="${case.path}" doc:name="createCase"/> -->
+        <object-to-string-transformer doc:name="Object to String"/>
+        <flow-ref name="account-process" doc:name="account-process"/>
+        <flow-ref name="contact-process" doc:name="contact-process"/>
+        <flow-ref name="case-process" doc:name="case-process"/>
+        
+    </flow>
+    <flow name="create-account-inbound">
+        <!-- <http:listener config-ref="HTTP_Listener_Configuration" path="${account.path}" doc:name="HTTP"/> -->
+        <object-to-string-transformer doc:name="Object to String"/>
+        <flow-ref name="account-process" doc:name="account-process"/>
+ 		<dw:transform-message doc:name="createAccountResponse">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	"Id": flowVars.accountId ,
+	"Status": flowVars.acntStusFlg when (flowVars.acntStusFlg == "Updated") otherwise flowVars.acntStusFlg
+}
+]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+    <flow name="create-contact-inbound">
+        <!-- <http:listener config-ref="HTTP_Listener_Configuration" path="${contact.path}" doc:name="HTTP"/> -->
+        <object-to-string-transformer doc:name="Object to String"/>
+        <flow-ref name="contact-process" doc:name="contact-process"/>
+         <dw:transform-message doc:name="createContactResponse">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	"Id":flowVars.contactId,
+	"Status": flowVars.contStusFlg when (flowVars.contStusFlg == "Updated") otherwise flowVars.contStusFlg
+}
+]]></dw:set-payload>
+        </dw:transform-message> 
+    </flow>
+    <sub-flow name="account-process">
+    <enricher   doc:name="Message Enricher">
+            <flow-ref name="query-account" doc:name="query-account"/>
+            <enrich source="#[payload]" target="#[flowVars.queryAccount]"/>
+            <enrich source="#[flowVars.accountId]" target="#[flowVars.accountId]"/>
+        </enricher>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.accountId != null and flowVars.accountId != &quot;null&quot;]">
+                <logger message="account exists in the slaesforce system" level="DEBUG" doc:name="accountExists" category="Account Process::"/>
+                <enricher   doc:name="Message Enricher">
+                    <flow-ref name="account-update" doc:name="account-update"/>
+                    <enrich source="#[payload]" target="#[flowVars.acntStusFlg]"/>
+                    <enrich source="#[flowVars.acntStusFlg]" target="#[flowVars.acntStusFlg]"/>
+                </enricher>
+            </when>
+            <otherwise>
+                <enricher   doc:name="Message Enricher">
+                    <flow-ref name="create-account" doc:name="create-account"/>
+                    <enrich source="#[payload]" target="#[flowVars.createAccount]"/>
+                    <enrich source="#[flowVars.accountId]" target="#[flowVars.accountId]"/>
+                    <enrich source="#[flowVars.acntStusFlg]" target="#[flowVars.acntStusFlg]"/>
+                </enricher>
+                <!-- <dw:transform-message doc:name="createAccountResponse">
+            		<dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+
+"id":flowVars.accountId]]></dw:set-payload>
+        		</dw:transform-message> -->
+                <logger message="created account in salesforce system" level="DEBUG" doc:name="accountCreated" category="Account process::"/>
+
+            </otherwise>
+        </choice>
+        
+    </sub-flow>
+    <sub-flow name="contact-process">
+    <enricher   doc:name="Message Enricher">
+            <flow-ref name="query-contact" doc:name="query-contact"/>
+            <enrich source="#[payload]" target="#[flowVars.queryContact]"/>
+            <enrich source="#[flowVars.contactId]" target="#[flowVars.contactId]"/>
+        </enricher>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.contactId != null  and flowVars.contactId != &quot;null&quot;]">
+                <logger message="Contact exists in the slaesforce system" level="DEBUG" doc:name="contactExists" category="Contact Process::"/>
+                <enricher   doc:name="Message Enricher">
+                    <flow-ref name="contact-update" doc:name="contact-update"/>
+                    <enrich source="#[payload]" target="#[flowVars.contStusFlg]"/>
+                    <enrich source="#[flowVars.contStusFlg]" target="#[flowVars.contStusFlg]"/>
+                </enricher>
+
+            </when>
+            <otherwise>
+                <enricher   doc:name="Message Enricher">
+                    <flow-ref name="create-contact" doc:name="create-contact"/>
+                    <enrich source="#[payload]" target="#[flowVars.createContact]"/>
+                    <enrich source="#[flowVars.contactId]" target="#[flowVars.contactId]"/>
+                    <enrich source="#[flowVars.contStusFlg]" target="#[flowVars.contStusFlg]"/>
+                </enricher>
+                 <!-- <dw:transform-message doc:name="createContactResponse">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+
+"id":flowVars.contactId]]></dw:set-payload>
+        </dw:transform-message> -->
+                <logger message="Created contact in salesforce system" level="DEBUG" doc:name="createdContact" category="Contact process::"/>
+            </otherwise>
+        </choice>
+    </sub-flow>
+    <sub-flow name="case-process">
+    <flow-ref name="create-case" doc:name="create-case"/>
+    <flow-ref name="query-case" doc:name="query-case"/>
+    </sub-flow>
+    <flow name="note-process-inbound">
+        <!-- <http:listener config-ref="HTTP_Listener_Configuration" path="${createNote.path}" doc:name="HTTP"/> -->
+        <flow-ref name="query-caseId" doc:name="query-caseId"/>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.CaseID != null  and flowVars.CaseID != &quot;null&quot;]">
+                <flow-ref name="create-note" doc:name="create-note"/>
+            </when>
+            <otherwise>
+                <logger level="DEBUG" doc:name="caseIdNotFound" category="Note process" message="Case ID does not exist in Salesforce System"/>
+                <dw:transform-message doc:name="caseNotFoundResponse">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	"status": 'Case not found in Salesforce System'
+}]]></dw:set-payload>
+                </dw:transform-message>
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="salesforce-send-notification">
+        <!-- <http:listener config-ref="HTTP_Listener_Configuration" path="${receive.notification.path.fromSalesforce}" doc:name="HTTP"/> -->
+        <!-- <scripting:component doc:name="Groovy">
+            <scripting:script engine="Groovy"><![CDATA[
+    sleep(10000);
+    return message.payload;]]></scripting:script>
+        </scripting:component> -->
+        <flow-ref name="send-notification-main" doc:name="send-notification-main"/>
+    </flow>
+    <flow name="partOrder-process-SAPToSalesforce">
+        <!-- <http:listener config-ref="HTTP_Listener_Configuration" path="${partOrder.update.path.fromSAP}" doc:name="HTTP"/> -->
+        <flow-ref name="update-partOrder" doc:name="update-partOrder"/>
+    </flow>
+</mule>

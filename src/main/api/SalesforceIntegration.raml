@@ -1,0 +1,417 @@
+#%RAML 0.8
+    title: Salesforce Integration
+    version: 1.0 development
+    baseUri: http://localhost:8080/
+    
+    /account:
+      get:
+       responses:
+         200:
+           body:
+             application/json:
+               example: |
+                  {
+                    "accountName": "Raj Kumar",
+                    "billingcity": "Mumbai",
+                    "shippingcity": "Mumbai",
+                    "country": "India",
+                    "phone": "7878787878"
+                  }
+      post:
+       description: |
+          Creates a new account in the salesforce system if it is not already created
+          with the details provided such as account name, billing city, shipping city,
+          country, phone. It returns the id of the existing or newly created account.
+       body:
+         application/json:
+           schema: |
+             {
+              "accountName": "Raj Kumar",
+              "billingcity":"Mumbai",
+              "shippingcity":"Mumbai",
+              "country":"India",
+              "phone":"7878787878"
+             }
+             
+           example: |
+             {
+              "accountName": "Raj Kumar",
+              "billingcity":"Mumbai",
+              "shippingcity":"Mumbai",
+              "country":"India",
+              "phone":"7878787878"
+             }
+       responses:
+         200:
+           body:
+             application/json:
+               example: |
+                 {
+                  "Id": "0014100000ssQ1aAAE",
+                  "Status": "Updated"
+                 }
+      /{id}:
+       put:
+        description: |
+          Updates the existing account in the salesforce system with details provided such as 
+          accountId, account name, billing city, shipping city,country, phone. 
+          It returns the status of the account updated.
+        body:
+         application/json:
+           schema: |
+             {
+              "accountId": "0014100000ssQ1aAAE",
+              "accountName": "Raj Kumar",
+              "billingcity":"Mumbai",
+              "shippingcity":"Mumbai",
+              "country":"India",
+              "phone":"7878787878"
+             }
+             
+           example: |
+             {
+              "accountId": "0014100000ssQ1aAAE",
+              "accountName": "Raj Kumar",
+              "billingcity":"Mumbai",
+              "shippingcity":"Mumbai",
+              "country":"India",
+              "phone":"7878787878"
+             }
+        responses:
+         200:
+           body:
+             application/json:
+               example: |
+                 {
+                  "status": "The account has been updated with the details provided"
+                 }      
+                    
+    /contact:
+      get:
+       responses:
+         200:
+           body:
+             application/json:
+               example: |
+                {
+                  "firstName": "Raj",
+                  "lastName": "kumar",
+                  "AccountId": "00141000003SLCI",
+                  "city": "Mumbai",
+                  "country": "India",
+                  "phone": "7878787878",
+                  "email": "abc12345@gmail.com"
+                }
+      post:
+       description: |
+          Creates a new contact in the salesforce system if it is not created already,
+          with the details provided such as first name, last name, account id, city, 
+          country, phone, email.It returns the id of the existing or newly created account.
+       body:
+         application/json:
+           schema: |
+             {
+              "firstName": "Raj",
+              "lastName": "kumar",
+              "AccountId": "00141000003SLCI",
+              "city": "Mumbai",
+              "country": "India",
+              "phone": "7878787878",
+              "email":"abc12345@gmail.com"
+             }
+           
+           example: |
+             {
+              "firstName": "Raj",
+              "lastName": "kumar",
+              "AccountId": "00141000003SLCI",
+              "city": "Mumbai",
+              "country": "India",
+              "phone": "7878787878",
+              "email":"abc12345@gmail.com"
+             }
+       responses:
+         200:
+           body:
+             application/json:
+               example: |
+                 {
+                  "id": "00341000018pL2KAAU"
+                 }
+      /{id}:
+       put:
+        description: |
+          Updates an already existing contact in the salesforce system
+          with the details provided such as first name, last name, account id, city, 
+          country, phone, email.It returns status of updation of the contact.
+        body:
+         application/json:
+           schema: |
+             {
+              "contactId": "00341000018rLmyAAE",
+              "firstName": "Raj",
+              "lastName": "kumar",
+              "AccountId": "00141000003SLCI",
+              "city": "Mumbai",
+              "country": "India",
+              "phone": "7878787878",
+              "email":"abc12345@gmail.com"
+             }
+           
+           example: |
+             {
+              "contactId": "00341000018rLmyAAE",
+              "firstName": "Raj",
+              "lastName": "kumar",
+              "AccountId": "00141000003SLCI",
+              "city": "Mumbai",
+              "country": "India",
+              "phone": "7878787878",
+              "email":"abc12345@gmail.com"
+             }
+        responses:
+         200:
+           body:
+             application/json:
+               example: |
+                 {
+                  "status": "The contact has been updated with the details provided"
+                 }  
+    /case:
+      get:
+       responses:
+         200:
+           body:
+             application/json:
+               example: |
+                 {
+                    "Origin": "Phone",
+                    "Description": "The issue coudl not be resolved with the guidelines. Please provide necessary support",
+                    "Reason": "Feedback",
+                    "SLAViolation__c": "No",
+                    "accountName": "amit gautam",
+                    "billingcity": "Mumbai",
+                    "shippingCity": "Mumbai",
+                    "firstName": "amit",
+                    "lastName": "gautam",
+                    "city": "Mumbai",
+                    "country": "India",
+                    "phone": "7878787878",
+                    "email": "abc12345@gmail.com",
+                    "originator__c": "originator",
+                    "Incoming_Channel__c": "Incoming Channel",
+                    "subject": "case creation"
+                 }
+      post:
+       description: |
+          Creates a case in the salesforce system with the details provided
+          Origin,Description,Reason,SLAViolation__c,first name,last name, 
+          accountName,billingcity,shippingCity,firstName,lastName,city,country,phone,email,
+          originator__c,Incoming_Channel__c,subject.
+          It returns the case id and case number of the case created in the salesforce.
+       body:
+         application/json:
+           schema: |
+             {
+              "Origin": "Phone",
+              "Description": "The issue coudl not be resolved with the guidelines. Please provide necessary support",
+              "Reason": "Feedback",
+              "SLAViolation__c": "No",
+              "accountName": "amit gautam",
+              "billingcity":"Mumbai",
+              "shippingCity":"Mumbai",
+              "firstName": "amit",
+              "lastName": "gautam",
+              "city":"Mumbai",
+              "country":"India",
+              "phone":"7878787878",
+              "email":"abc12345@gmail.com",
+              "originator__c": "originator",
+              "Incoming_Channel__c": "Incoming Channel",
+              "subject": "case creation"
+              }      
+           
+           example: |
+             {
+              "Origin": "Phone",
+              "Description": "The issue coudl not be resolved with the guidelines. Please provide necessary support",
+              "Reason": "Feedback",
+              "SLAViolation__c": "No",
+              "accountName": "amit gautam",
+              "billingcity":"Mumbai",
+              "shippingCity":"Mumbai",
+              "firstName": "amit",
+              "lastName": "gautam",
+              "city":"Mumbai",
+              "country":"India",
+              "phone":"7878787878",
+              "email":"abc12345@gmail.com",
+              "originator__c": "originator",
+              "Incoming_Channel__c": "Incoming Channel",
+              "subject": "case creation"
+              }                     
+       responses:
+         200:
+           body:
+             application/json:
+               example: |
+                 {
+                  "CaseNumber": "00001162",
+                  "CaseId": "5004100000I4WNVAA3"
+                 }
+      /{id}:
+        put:
+         description: |
+          Updates the already existing case in the salesforce system with details provided such as 
+          Id, Origin, Description, Reason,SLAViolation__c, subject, originator__c, Incoming_Channel__c, Status. 
+          It returns the status of the case updated.
+         body:
+           application/json:
+             schema: |
+              {
+              "Id": "5004100000K36p9AAB",
+              "Origin": "Phone",
+              "Description": "The issue could not be resolved with the guidelines. Please provide necessary support",
+              "Reason": "Feedback",
+              "SLAViolation__c": "No",
+              "originator__c": "originator",
+              "Incoming_Channel__c": "Incoming Channel",
+              "subject": "case creation"
+              }      
+           
+             example: |
+              {
+              "Id": "5004100000K36p9AAB",
+              "Origin": "Phone",
+              "Description": "The issue coudl not be resolved with the guidelines. Please provide necessary support",
+              "Reason": "Feedback",
+              "SLAViolation__c": "No",
+              "originator__c": "originator",
+              "Incoming_Channel__c": "Incoming Channel",
+              "subject": "case creation"
+              }                     
+         responses:
+           200:
+             body:
+               application/json:
+                 example: |
+                   {
+                    "status": "The case has been updated with the details provided"
+                   }    
+
+    /caseNote:
+      get:
+       responses:
+         200:
+           body:
+             application/text:
+               example: |
+                 GET method not allowed for the service exposed
+      post:
+       description: |
+          Creates a note in the salesforce system with the details provided such as 
+          case number and comment. It returns the note id and status(true/false) of 
+          the note created in the salesforce.
+       body:
+         application/json:
+           schema: |
+             {
+              "CaseNumber": "00001141",
+              "Comment": "POD"
+             }  
+          
+           example: |
+             {
+              "CaseNumber": "00001141",
+              "Comment": "POD"
+             }            
+       responses:
+         200:
+           body:
+             application/json:
+               example: |
+                 {
+                  "status": [true],
+                  "id": ["00a41000004FGIEAA4"]
+                 }
+
+    /notification:
+      get:
+       responses:
+         200:
+           body:
+             application/text:
+               example: |
+                 GET method not allowed for the service exposed
+      post:
+       description: |
+          This flow receives a part order from salesforce and send it to the 
+          part order system. It also update the part order status in the salesforce system.
+          with the details provided such as order number and PO status and comment. 
+          It logs the part order updated in the salesforce.
+       body:
+         application/json:
+           schema: |
+             {
+              "OrderNumber": "00000102" ,
+              "POStatus": "POD",
+              "Comment": "Shipped to POD"   
+             } 
+           
+           example: |
+             {
+              "OrderNumber": "00000102" ,
+              "POStatus": "POD",
+              "Comment": "Shipped to POD"   
+             } 
+           
+       responses:
+         200:
+           body:
+             application/json:
+               example: |
+                 {
+                  "OrderNumber": "00000102" ,
+                  "POStatus": "POD",
+                  "Comment": "Shipped to POD"   
+                 } 
+      
+      
+    /partOrder:
+      get:
+       responses:
+         200:
+           body:
+             application/text:
+               example: |
+                 GET method not allowed for the service exposed
+      post:
+       description: |
+          This flow updates a part order in the salesforce system.
+          with the details provided such as order number and PO status and comment. 
+          It logs the part order updated in the salesforce.
+       body:
+         application/json:
+           schema: |
+             {
+              "OrderNumber": "00000102" ,
+              "POStatus": "POD",
+              "Comment": "Shipped to POD"   
+             }
+           
+           example: |
+             {
+              "OrderNumber": "00000102" ,
+              "POStatus": "POD",
+              "Comment": "Shipped to POD"   
+             } 
+           
+       responses:
+         200:
+           body:
+             application/json:
+               example: |
+                 {
+                  "result": true
+                 }
+   

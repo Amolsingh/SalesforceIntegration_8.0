@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd">
+    <flow name="query-case">
+        <!-- <http:listener config-ref="HTTP_Listener_Configuration" path="${query.case.path}" doc:name="HTTP"/> -->
+        <dw:transform-message doc:name="queryCaseRequest">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	
+}]]></dw:set-payload>
+            <dw:set-variable variableName="CaseID"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.ID]]></dw:set-variable>
+        </dw:transform-message>
+        <!-- <sfdc:query-all config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT AccountId,AssetId,CaseNumber,ClosedDate,ContactId,CreatedById,CreatedDate,Description,EngineeringReqNumber__c,Id,IsClosed,IsDeleted,IsEscalated,LastModifiedById,LastModifiedDate,LastReferencedDate,LastViewedDate,Origin,OwnerId,ParentId,PotentialLiability__c,Priority,Product__c,Reason,SLAViolation__c,Status,Subject,SuppliedCompany,SuppliedEmail,SuppliedName,SuppliedPhone,SystemModstamp,Type FROM Case where id = '#[sessionVars.CaseID]'" doc:name="Salesforce"/> -->
+        <sfdc:query-all config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT CaseNumber,Id FROM Case where Id = '#[sessionVars.CaseID]'" doc:name="Salesforce"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <json:json-to-object-transformer doc:name="JSON to Object"/>
+        <dw:transform-message doc:name="queryCaseResponse">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+"CaseNumber": payload.CaseNumber[0],
+"CaseId": payload.Id[0]
+}]]></dw:set-payload>
+        </dw:transform-message>
+
+    </flow>
+    <flow name="query-account">
+        <!-- <http:listener config-ref="HTTP_Listener_Configuration" path="${query.account.path}" doc:name="HTTP"/> -->
+        <dw:transform-message doc:name="queryAccountRequest">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+}]]></dw:set-payload>
+            <dw:set-variable variableName="EntityName"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.accountName]]></dw:set-variable>
+        </dw:transform-message>
+        <sfdc:query config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT  Id  FROM Account where Name = '#[flowVars.EntityName]' " doc:name="Salesforce"/>
+        <dw:transform-message doc:name="queryAccountResponse">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+"id":payload.Id[0]]]></dw:set-payload>
+            <dw:set-variable variableName="accountId"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.Id[0]]]></dw:set-variable>
+        </dw:transform-message>
+        <set-variable variableName="accountId" value="#[json:id]" doc:name="Variable"/>
+
+    </flow>
+    <flow name="query-contact">
+        <!-- <http:listener config-ref="HTTP_Listener_Configuration" path="${query.contact.path}" doc:name="HTTP"/> -->
+        <dw:transform-message doc:name="queryContactRequest">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+}]]></dw:set-payload>
+            <dw:set-variable variableName="ContactEmail"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.email]]></dw:set-variable>
+        </dw:transform-message>
+        <sfdc:query config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT Id FROM Contact WHERE email = '#[flowVars.ContactEmail]'" doc:name="Salesforce"/>
+        <dw:transform-message doc:name="queryContactResponse">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+"id":payload.Id[0]]]></dw:set-payload>
+            <dw:set-variable variableName="contactId"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.Id[0]]]></dw:set-variable>
+        </dw:transform-message>
+        <set-variable variableName="contactId" value="#[json:id]" doc:name="Variable"/>
+
+    </flow>
+    <flow name="query-caseId">
+        <!-- <http:listener config-ref="HTTP_Listener_Configuration" path="${query.caseId.path}" doc:name="HTTP"/> -->
+        <dw:transform-message doc:name="queryCaseIdRequest">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+}]]></dw:set-payload>
+            <dw:set-variable variableName="CaseNumber"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.CaseNumber]]></dw:set-variable>
+            <dw:set-variable variableName="Comment"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.Comment]]></dw:set-variable>
+        </dw:transform-message>
+        <sfdc:query-all config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT Id FROM Case where CaseNumber = '#[flowVars.CaseNumber]'" doc:name="Salesforce"/>
+        <dw:transform-message doc:name="queryCaseIdResponse">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+"id":payload.Id[0]]]></dw:set-payload>
+            <dw:set-variable variableName="CaseId"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.Id[0]]]></dw:set-variable>
+
+        </dw:transform-message>
+        <json:json-to-xml-transformer doc:name="JSON to XML"/>
+        <dw:transform-message doc:name="caseId">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload.id]]></dw:set-payload>
+            <dw:set-variable variableName="CaseId"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.id]]></dw:set-variable>
+        </dw:transform-message>
+    </flow>
+    <flow name="query-partOrder">
+        <!-- <http:listener config-ref="HTTP_Listener_Configuration" path="${query.orderNumber}" doc:name="HTTP"/> -->
+        <dw:transform-message doc:name="queryPartOrderRequest">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+            <dw:set-variable variableName="OrderNumber"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.OrderNumber]]></dw:set-variable>
+            <dw:set-variable variableName="POStatus"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.POStatus]]></dw:set-variable>
+            <dw:set-variable variableName="Description"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.Comment]]></dw:set-variable>
+        </dw:transform-message>
+        <sfdc:query-all config-ref="Salesforce__Basic_Authentication" query="SELECT id,PO_Status__c,Name,ownerId,AccountId,status,Description,EffectiveDate  from Order where OrderNumber= '#[flowVars.OrderNumber]' " doc:name="Salesforce"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <dw:transform-message doc:name="queryPartOrderResponse">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+            <dw:set-variable variableName="Id"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.Id[0]]]></dw:set-variable>
+            <dw:set-variable variableName="AccountId"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.AccountId[0]]]></dw:set-variable>
+            <dw:set-variable variableName="Status"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.Status[0]]]></dw:set-variable>
+            <dw:set-variable variableName="OrderStartDate"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.EffectiveDate[0]]]></dw:set-variable>
+        </dw:transform-message>
+    </flow>
+    <flow name="query-accountName">
+        <dw:transform-message doc:name="queryAccountRequest">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+}]]></dw:set-payload>
+            <dw:set-variable variableName="EntityName"><![CDATA[%dw 1.0
+%output application/java
+---
+flowVars.AccountId]]></dw:set-variable>
+        </dw:transform-message>
+        <sfdc:query config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT  Name  FROM Account where Id = '#[flowVars.EntityName]' " doc:name="Salesforce"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <dw:transform-message doc:name="queryAccountResponse">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+"id":payload.Id[0]]]></dw:set-payload>
+            <dw:set-variable variableName="accountName"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.Name[0]]]></dw:set-variable>
+        </dw:transform-message>
+
+    </flow>
+</mule>
